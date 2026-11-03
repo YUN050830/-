@@ -1,0 +1,746 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랜덤 팀 나누기</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4ff;
+            text-align: center;
+            padding: 30px;
+        }
+
+        h1, h2 {
+            color: #3157a4;
+        }
+
+        .team-container {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin: 30px auto;
+        }
+
+        .team {
+            background: white;
+            padding: 25px;
+            width: 220px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .members {
+            font-size: 21px;
+            line-height: 1.8;
+            font-weight: bold;
+        }
+
+        button {
+            background: #3157a4;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #1e3d7a;
+        }
+
+        button:disabled {
+            background: gray;
+            cursor: not-allowed;
+        }
+
+        input {
+            padding: 12px;
+            font-size: 18px;
+            width: 180px;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .money-area {
+            margin: 30px auto;
+        }
+
+        .current-money {
+            color: #e05b45;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .personal-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .person {
+            display: flex;
+            justify-content: space-between;
+            padding: 13px;
+            border-bottom: 1px solid #eee;
+            font-size: 18px;
+        }
+
+        .person:last-child {
+            border-bottom: none;
+        }
+
+        .personal-money {
+            font-weight: bold;
+            color: #e05b45;
+        }
+
+        .reset-button {
+            background: #d9534f;
+        }
+
+        /* 로그인 화면 */
+        .auth-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 30px;
+            width: 320px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .auth-card h1 {
+            font-size: 24px;
+            margin: 0 0 6px;
+        }
+
+        .auth-sub {
+            color: #777;
+            margin: 0 0 20px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .auth-tabs .tab {
+            flex: 1;
+            background: #e5ebf7;
+            color: #3157a4;
+            margin: 0;
+        }
+
+        .auth-tabs .tab.active {
+            background: #3157a4;
+            color: white;
+        }
+
+        .auth-card input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .auth-card #authSubmit {
+            width: 100%;
+            margin: 0;
+        }
+
+        .auth-msg {
+            min-height: 20px;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #d9534f;
+        }
+
+        .auth-msg.ok {
+            color: #2e8b57;
+        }
+
+        /* 상단 사용자 바 */
+        .topbar {
+            max-width: 600px;
+            margin: 0 auto 10px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: #3157a4;
+        }
+
+        .logout-button {
+            background: #6c7a92;
+            font-size: 14px;
+            padding: 8px 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 로그인 / 회원가입 화면 -->
+    <div class="auth-wrap" id="loginScreen">
+
+        <div class="auth-card">
+
+            <h1>🎲 랜덤 팀 나누기</h1>
+            <p class="auth-sub">로그인하고 시작하세요</p>
+
+            <div class="auth-tabs">
+                <button class="tab active" id="tabLogin" onclick="switchTab('login')">
+                    로그인
+                </button>
+                <button class="tab" id="tabSignup" onclick="switchTab('signup')">
+                    회원가입
+                </button>
+            </div>
+
+            <input
+                type="text"
+                id="authId"
+                placeholder="아이디"
+                autocomplete="username"
+            >
+
+            <input
+                type="password"
+                id="authPw"
+                placeholder="비밀번호"
+                autocomplete="current-password"
+            >
+
+            <input
+                type="password"
+                id="authPw2"
+                placeholder="비밀번호 확인"
+                autocomplete="new-password"
+                style="display: none;"
+            >
+
+            <div class="auth-msg" id="authMsg"></div>
+
+            <button id="authSubmit" onclick="submitAuth()">
+                로그인
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- 앱 화면 (로그인 후 표시) -->
+    <div id="appScreen" style="display: none;">
+
+        <div class="topbar">
+            <span id="welcomeMsg"></span>
+            <button class="logout-button" onclick="logout()">로그아웃</button>
+        </div>
+
+        <h1>🎲 랜덤 팀 나누기</h1>
+        <p>팀을 나눈 후 승리 팀을 선택하세요!</p>
+
+    <!-- 팀 화면 -->
+    <div class="team-container">
+
+        <div class="team">
+            <h2>1팀</h2>
+            <div class="members" id="team1">?</div>
+
+            <button id="win1" onclick="addScore(1)" disabled>
+                1팀 승리!
+            </button>
+        </div>
+
+        <div class="team">
+            <h2>2팀</h2>
+            <div class="members" id="team2">?</div>
+
+            <button id="win2" onclick="addScore(2)" disabled>
+                2팀 승리!
+            </button>
+        </div>
+
+    </div>
+
+    <button id="startButton" onclick="makeTeams()">
+        팀 나누기!
+    </button>
+
+
+    <!-- 금액 설정 -->
+    <div class="money-area">
+
+        <h2>💰 금액 설정</h2>
+
+        <input
+            type="number"
+            id="moneyInput"
+            placeholder="금액 입력"
+            min="1"
+            step="1"
+        >
+
+        <br>
+
+        <button onclick="setMoney()">
+            금액 적용
+        </button>
+
+        <p>현재 적용 금액</p>
+
+        <div class="current-money" id="currentMoney">
+            0원
+        </div>
+
+        <p>금액을 변경하기 전까지 계속 유지됩니다.</p>
+
+    </div>
+
+
+    <!-- 개인별 누적 금액 -->
+    <div class="personal-container">
+
+        <h2>👤 개인별 누적 금액</h2>
+
+        <div class="person">
+            <span>성빈</span>
+            <span class="personal-money" id="성빈">0원</span>
+        </div>
+
+        <div class="person">
+            <span>종민</span>
+            <span class="personal-money" id="종민">0원</span>
+        </div>
+
+        <div class="person">
+            <span>근우</span>
+            <span class="personal-money" id="근우">0원</span>
+        </div>
+
+        <div class="person">
+            <span>선우</span>
+            <span class="personal-money" id="선우">0원</span>
+        </div>
+
+    </div>
+
+    <button class="reset-button" onclick="resetScore()">
+        전체 점수 초기화
+    </button>
+
+    </div>
+
+
+    <script>
+
+        // ===== 로그인 / 회원가입 =====
+
+        const ACCOUNTS_KEY = "randomTeamAccounts";
+        const SESSION_KEY = "randomTeamUser";
+
+        // 현재 화면 모드 ("login" | "signup")
+        let authMode = "login";
+
+
+        // 저장된 계정 목록 불러오기
+        function loadAccounts() {
+            try {
+                return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+
+        // 계정 목록 저장하기
+        function saveAccounts(accounts) {
+            localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+        }
+
+
+        // 비밀번호 해시 (평문 저장 방지)
+        async function hashPassword(password) {
+
+            if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+
+                try {
+                    let data = new TextEncoder().encode(password);
+
+                    let buffer = await window.crypto.subtle.digest("SHA-256", data);
+
+                    let hex = Array.from(new Uint8Array(buffer))
+                        .map(function(b) {
+                            return b.toString(16).padStart(2, "0");
+                        })
+                        .join("");
+
+                    return "sha256:" + hex;
+
+                } catch (e) {
+                    // 아래 간단한 해시로 대체
+                }
+            }
+
+            let hash = 5381;
+
+            for (let i = 0; i < password.length; i++) {
+                hash = ((hash * 33) ^ password.charCodeAt(i)) >>> 0;
+            }
+
+            return "simple:" + hash.toString(16);
+        }
+
+
+        // 로그인 / 회원가입 탭 전환
+        function switchTab(mode) {
+
+            authMode = mode;
+
+            document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+            document.getElementById("tabSignup").classList.toggle("active", mode === "signup");
+
+            document.getElementById("authPw2").style.display = (mode === "signup") ? "block" : "none";
+            document.getElementById("authSubmit").innerHTML = (mode === "signup") ? "회원가입" : "로그인";
+
+            setAuthMessage("", false);
+
+            document.getElementById("authPw").value = "";
+        }
+
+
+        // 안내 메시지 표시
+        function setAuthMessage(text, isOk) {
+
+            let msg = document.getElementById("authMsg");
+
+            msg.innerHTML = text;
+            msg.classList.toggle("ok", !!isOk);
+        }
+
+
+        // 로그인 / 회원가입 처리
+        async function submitAuth() {
+
+            let id = document.getElementById("authId").value.trim();
+            let pw = document.getElementById("authPw").value;
+            let pw2 = document.getElementById("authPw2").value;
+
+            if (id.length < 2) {
+                setAuthMessage("아이디는 2자 이상 입력해주세요.", false);
+                return;
+            }
+
+            if (pw.length < 4) {
+                setAuthMessage("비밀번호는 4자 이상 입력해주세요.", false);
+                return;
+            }
+
+            let accounts = loadAccounts();
+
+            // "__proto__" 같은 아이디로 저장소가 오염되지 않도록 접두어 사용
+            let key = "user:" + id;
+
+            if (authMode === "signup") {
+
+                if (pw !== pw2) {
+                    setAuthMessage("비밀번호가 서로 다릅니다.", false);
+                    return;
+                }
+
+                if (Object.prototype.hasOwnProperty.call(accounts, key)) {
+                    setAuthMessage("이미 사용 중인 아이디입니다.", false);
+                    return;
+                }
+
+                accounts[key] = {
+                    pw: await hashPassword(pw),
+                    created: Date.now()
+                };
+
+                saveAccounts(accounts);
+
+                startSession(id);
+
+            } else {
+
+                if (!Object.prototype.hasOwnProperty.call(accounts, key)) {
+                    setAuthMessage("존재하지 않는 아이디입니다.", false);
+                    return;
+                }
+
+                if (accounts[key].pw !== await hashPassword(pw)) {
+                    setAuthMessage("비밀번호가 일치하지 않습니다.", false);
+                    return;
+                }
+
+                startSession(id);
+            }
+        }
+
+
+        // 로그인 상태 저장 후 앱 화면 표시
+        function startSession(id) {
+
+            localStorage.setItem(SESSION_KEY, id);
+
+            document.getElementById("authId").value = "";
+            document.getElementById("authPw").value = "";
+            document.getElementById("authPw2").value = "";
+
+            showApp(id);
+        }
+
+
+        // 앱 화면 보여주기
+        function showApp(id) {
+
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("appScreen").style.display = "block";
+
+            document.getElementById("welcomeMsg").innerHTML = "";
+
+            let nameEl = document.createElement("b");
+            nameEl.textContent = id;
+            document.getElementById("welcomeMsg").appendChild(nameEl);
+
+            document.getElementById("welcomeMsg").appendChild(
+                document.createTextNode("님 환영합니다")
+            );
+        }
+
+
+        // 로그아웃
+        function logout() {
+
+            if (!confirm("로그아웃할까요?")) return;
+
+            localStorage.removeItem(SESSION_KEY);
+
+            document.getElementById("appScreen").style.display = "none";
+            document.getElementById("loginScreen").style.display = "flex";
+
+            switchTab("login");
+
+            document.getElementById("authId").value = "";
+        }
+
+
+        // 페이지 열 때 로그인 상태 확인
+        function initAuth() {
+
+            let savedUser = localStorage.getItem(SESSION_KEY);
+
+            if (savedUser && Object.prototype.hasOwnProperty.call(loadAccounts(), "user:" + savedUser)) {
+                showApp(savedUser);
+            } else {
+                document.getElementById("loginScreen").style.display = "flex";
+                document.getElementById("appScreen").style.display = "none";
+            }
+
+            // Enter 키로 로그인
+            ["authId", "authPw", "authPw2"].forEach(function(inputId) {
+
+                document.getElementById(inputId).addEventListener("keydown", function(event) {
+
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        submitAuth();
+                    }
+                });
+            });
+        }
+
+
+        // ===== 랜덤 팀 나누기 =====
+
+        // 참가자
+        const names = ["성빈", "종민", "근우", "선우"];
+
+        // 개인별 누적 금액
+        let personalScores = {
+            "성빈": 0,
+            "종민": 0,
+            "근우": 0,
+            "선우": 0
+        };
+
+        // 현재 팀
+        let team1 = [];
+        let team2 = [];
+
+        // 현재 적용 금액
+        let currentMoney = 0;
+
+        // 승리 팀 선택 여부
+        let winnerSelected = true;
+
+        // 팀 편성 중인지 확인
+        let isDrawing = false;
+
+
+        // 금액 설정
+        function setMoney() {
+
+            let money = Number(
+                document.getElementById("moneyInput").value
+            );
+
+            if (!Number.isSafeInteger(money) || money <= 0) {
+                alert("올바른 금액을 입력해주세요!");
+                return;
+            }
+
+            currentMoney = money;
+
+            document.getElementById("currentMoney").innerHTML =
+                currentMoney.toLocaleString() + "원";
+
+            document.getElementById("moneyInput").value = "";
+
+            alert("금액이 적용되었습니다!");
+        }
+
+
+        // 랜덤 팀 나누기
+        function makeTeams() {
+
+            if (isDrawing) return;
+
+            let button = document.getElementById("startButton");
+
+            isDrawing = true;
+            winnerSelected = true;
+
+            // 승리 버튼 비활성화
+            document.getElementById("win1").disabled = true;
+            document.getElementById("win2").disabled = true;
+
+            button.disabled = true;
+            button.innerHTML = "팀 편성 중...";
+
+            document.getElementById("team1").innerHTML = "편성 중...";
+            document.getElementById("team2").innerHTML = "편성 중...";
+
+            // 기존 팀 초기화
+            team1 = [];
+            team2 = [];
+
+            setTimeout(function() {
+
+                let shuffled = [...names];
+
+                shuffled.sort(() => Math.random() - 0.5);
+
+                team1 = shuffled.slice(0, 2);
+                team2 = shuffled.slice(2, 4);
+
+                document.getElementById("team1").innerHTML =
+                    team1.join("<br>");
+
+                document.getElementById("team2").innerHTML =
+                    team2.join("<br>");
+
+                // 새로운 팀 편성 완료
+                winnerSelected = false;
+                isDrawing = false;
+
+                // 승리 버튼 활성화
+                document.getElementById("win1").disabled = false;
+                document.getElementById("win2").disabled = false;
+
+                button.disabled = false;
+                button.innerHTML = "다시 팀 나누기!";
+
+            }, 2000);
+        }
+
+
+        // 승리 팀 점수 추가
+        function addScore(team) {
+
+            // 이미 승리 팀을 선택했는지 확인
+            if (winnerSelected || isDrawing) {
+                alert("이번 팀의 승리는 이미 결정되었습니다!");
+                return;
+            }
+
+            // 금액 설정 여부 확인
+            if (currentMoney <= 0) {
+                alert("먼저 금액을 설정해주세요!");
+                return;
+            }
+
+            let winners = (team === 1) ? team1 : team2;
+
+            if (winners.length === 0) {
+                alert("먼저 팀을 나눠주세요!");
+                return;
+            }
+
+            // 중복 클릭 방지
+            winnerSelected = true;
+
+            // 두 버튼 모두 비활성화
+            document.getElementById("win1").disabled = true;
+            document.getElementById("win2").disabled = true;
+
+            // 승리 팀원 각자에게 금액 추가
+            winners.forEach(function(name) {
+
+                personalScores[name] += currentMoney;
+
+                document.getElementById(name).innerHTML =
+                    personalScores[name].toLocaleString() + "원";
+
+            });
+
+            alert(team + "팀 승리! 각 팀원에게 " +
+                currentMoney.toLocaleString() + "원이 추가되었습니다.");
+        }
+
+
+        // 전체 점수 초기화
+        function resetScore() {
+
+            if (confirm("모든 개인별 누적 금액을 초기화할까요?")) {
+
+                names.forEach(function(name) {
+
+                    personalScores[name] = 0;
+
+                    document.getElementById(name).innerHTML = "0원";
+
+                });
+
+                // 현재 적용 금액은 유지
+            }
+        }
+
+
+        // 로그인 화면부터 시작
+        initAuth();
+
+    </script>
+
+</body>
+</html>
