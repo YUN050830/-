@@ -108,13 +108,11 @@
         .reset-button {
             background: #d9534f;
         }
-
     </style>
 </head>
 
 <body>
 
-    <!-- 앱 화면 -->
     <h1>🎲 랜덤 팀 나누기</h1>
     <p>팀을 나눈 후 승리 팀을 선택하세요!</p>
 
@@ -209,8 +207,6 @@
 
 
     <script>
-
-        // ===== 랜덤 팀 나누기 =====
 
         // 참가자
         const names = ["성빈", "종민", "근우", "선우"];
@@ -314,7 +310,7 @@
         }
 
 
-        // 승리 팀 점수 추가
+        // 승리 팀 점수 추가 및 패배 팀 점수 차감
         function addScore(team) {
 
             // 이미 승리 팀을 선택했는지 확인
@@ -330,8 +326,9 @@
             }
 
             let winners = (team === 1) ? team1 : team2;
+            let losers = (team === 1) ? team2 : team1;
 
-            if (winners.length === 0) {
+            if (winners.length === 0 || losers.length === 0) {
                 alert("먼저 팀을 나눠주세요!");
                 return;
             }
@@ -343,18 +340,38 @@
             document.getElementById("win1").disabled = true;
             document.getElementById("win2").disabled = true;
 
-            // 승리 팀원 각자에게 금액 추가
+            // 승리 팀원에게 금액 추가
             winners.forEach(function(name) {
-
                 personalScores[name] += currentMoney;
+            });
 
-                document.getElementById(name).innerHTML =
+            // 패배 팀원에게 금액 차감
+            losers.forEach(function(name) {
+                personalScores[name] -= currentMoney;
+            });
+
+            // 개인별 누적 금액 화면 업데이트
+            names.forEach(function(name) {
+
+                let scoreElement = document.getElementById(name);
+
+                scoreElement.innerHTML =
                     personalScores[name].toLocaleString() + "원";
+
+                // 마이너스 금액 색상 표시
+                if (personalScores[name] < 0) {
+                    scoreElement.style.color = "#3157a4";
+                } else {
+                    scoreElement.style.color = "#e05b45";
+                }
 
             });
 
-            alert(team + "팀 승리! 각 팀원에게 " +
-                currentMoney.toLocaleString() + "원이 추가되었습니다.");
+            alert(
+                team + "팀 승리!\n" +
+                "승리 팀: +" + currentMoney.toLocaleString() + "원\n" +
+                "패배 팀: -" + currentMoney.toLocaleString() + "원"
+            );
         }
 
 
@@ -367,14 +384,16 @@
 
                     personalScores[name] = 0;
 
-                    document.getElementById(name).innerHTML = "0원";
+                    let scoreElement = document.getElementById(name);
+
+                    scoreElement.innerHTML = "0원";
+                    scoreElement.style.color = "#e05b45";
 
                 });
 
                 // 현재 적용 금액은 유지
             }
         }
-
 
     </script>
 
