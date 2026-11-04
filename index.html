@@ -103,6 +103,38 @@
         .personal-money {
             font-weight: bold;
             color: #e05b45;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border-bottom: 1px dashed #e0a99f;
+        }
+
+        .personal-money:hover {
+            background: #fff3f0;
+        }
+
+        .score-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 26px;
+        }
+
+        .score-input {
+            width: 110px;
+            padding: 3px 8px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            color: #e05b45;
+            border: 2px solid #3157a4;
+            border-radius: 6px;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #777;
+            margin-top: -8px;
         }
 
         .reset-button {
@@ -179,24 +211,42 @@
 
         <h2>👤 개인별 누적 금액</h2>
 
+        <p class="hint">금액을 클릭하면 직접 수정할 수 있습니다.</p>
+
         <div class="person">
             <span>성빈</span>
-            <span class="personal-money" id="성빈">0원</span>
+            <span class="score-wrap">
+                <span class="personal-money" id="성빈"
+                      onclick="startEdit('성빈')"
+                      title="클릭하여 직접 수정">0원</span>
+            </span>
         </div>
 
         <div class="person">
             <span>종민</span>
-            <span class="personal-money" id="종민">0원</span>
+            <span class="score-wrap">
+                <span class="personal-money" id="종민"
+                      onclick="startEdit('종민')"
+                      title="클릭하여 직접 수정">0원</span>
+            </span>
         </div>
 
         <div class="person">
             <span>근우</span>
-            <span class="personal-money" id="근우">0원</span>
+            <span class="score-wrap">
+                <span class="personal-money" id="근우"
+                      onclick="startEdit('근우')"
+                      title="클릭하여 직접 수정">0원</span>
+            </span>
         </div>
 
         <div class="person">
             <span>선우</span>
-            <span class="personal-money" id="선우">0원</span>
+            <span class="score-wrap">
+                <span class="personal-money" id="선우"
+                      onclick="startEdit('선우')"
+                      title="클릭하여 직접 수정">0원</span>
+            </span>
         </div>
 
     </div>
@@ -231,6 +281,123 @@
 
         // 팀 편성 중인지 확인
         let isDrawing = false;
+
+        // 금액 직접 수정 중인 참가자
+        let editingName = null;
+        let editingInput = null;
+
+
+        // 금액 표시 형식
+        function formatScore(value) {
+            return value.toLocaleString() + "원";
+        }
+
+
+        // 한 사람의 누적 금액 화면 갱신
+        function renderScore(name) {
+
+            if (editingName === name) return;
+
+            let scoreElement = document.getElementById(name);
+
+            scoreElement.innerHTML = formatScore(personalScores[name]);
+
+            // 마이너스 금액 색상 표시
+            scoreElement.style.color =
+                personalScores[name] < 0 ? "#3157a4" : "#e05b45";
+        }
+
+
+        // 누적 금액 직접 수정 시작
+        function startEdit(name) {
+
+            if (isDrawing) return;
+
+            // 다른 사람을 수정 중이었다면 먼저 저장
+            if (editingName) finishEdit(true);
+
+            if (editingName) return;
+
+            let scoreElement = document.getElementById(name);
+
+            let input = document.createElement("input");
+            input.type = "text";
+            input.inputMode = "numeric";
+            input.className = "score-input";
+            input.value = String(personalScores[name]);
+
+            scoreElement.style.display = "none";
+            scoreElement.parentElement.appendChild(input);
+
+            editingName = name;
+            editingInput = input;
+
+            input.focus();
+            input.select();
+
+            input.addEventListener("keydown", function(event) {
+
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    finishEdit(true);
+                } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    finishEdit(false);
+                }
+            });
+
+            input.addEventListener("blur", function() {
+
+                // 이미 저장/취소된 경우 무시
+                if (editingName === name && input.isConnected) {
+                    finishEdit(true);
+                }
+            });
+        }
+
+
+        // 누적 금액 직접 수정 완료 (save=false면 취소)
+        function finishEdit(save) {
+
+            if (!editingName) return;
+
+            let name = editingName;
+            let input = editingInput;
+
+            editingName = null;
+            editingInput = null;
+
+            if (save) {
+
+                let raw = input.value
+                    .replace(/,/g, "")
+                    .replace(/원/g, "")
+                    .replace(/\s/g, "");
+
+                if (!/^-?\d+$/.test(raw)) {
+
+                    alert("숫자만 입력해주세요!");
+
+                } else {
+
+                    let value = Number(raw);
+
+                    if (!Number.isSafeInteger(value)) {
+                        alert("올바른 금액을 입력해주세요!");
+                    } else {
+                        personalScores[name] = value;
+                    }
+                }
+            }
+
+            input.remove();
+
+            let scoreElement = document.getElementById(name);
+
+            scoreElement.style.display = "";
+
+            renderScore(name);
+        }
 
 
         // 금액 설정
@@ -313,6 +480,9 @@
         // 승리 팀 점수 추가 및 패배 팀 점수 차감
         function addScore(team) {
 
+            // 수정 중인 금액이 있으면 먼저 저장
+            if (editingName) finishEdit(true);
+
             // 이미 승리 팀을 선택했는지 확인
             if (winnerSelected || isDrawing) {
                 alert("이번 팀의 승리는 이미 결정되었습니다!");
@@ -352,19 +522,7 @@
 
             // 개인별 누적 금액 화면 업데이트
             names.forEach(function(name) {
-
-                let scoreElement = document.getElementById(name);
-
-                scoreElement.innerHTML =
-                    personalScores[name].toLocaleString() + "원";
-
-                // 마이너스 금액 색상 표시
-                if (personalScores[name] < 0) {
-                    scoreElement.style.color = "#3157a4";
-                } else {
-                    scoreElement.style.color = "#e05b45";
-                }
-
+                renderScore(name);
             });
 
             alert(
@@ -378,16 +536,16 @@
         // 전체 점수 초기화
         function resetScore() {
 
+            // 수정 중인 금액은 취소
+            if (editingName) finishEdit(false);
+
             if (confirm("모든 개인별 누적 금액을 초기화할까요?")) {
 
                 names.forEach(function(name) {
 
                     personalScores[name] = 0;
 
-                    let scoreElement = document.getElementById(name);
-
-                    scoreElement.innerHTML = "0원";
-                    scoreElement.style.color = "#e05b45";
+                    renderScore(name);
 
                 });
 
