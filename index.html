@@ -124,6 +124,10 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_45XBU7VrlDO-gy6TpkUimA_BhqrtghC';
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // 일반 스크립트(점수/금액/참가자 로직)와 공유
+        window.__supabase = supabase;
+        window.__supabaseUser = null;
+
         const PROVIDERS = [
             { id: 'google', label: 'Google로 로그인', className: 'google' },
             { id: 'kakao', label: 'Kakao로 로그인', className: 'kakao' },
@@ -140,6 +144,7 @@
             buttonsEl.innerHTML = '';
 
             const user = session?.user;
+            window.__supabaseUser = user || null;
             if (user) {
                 const displayName = user.user_metadata?.name || user.email || user.id;
                 const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
@@ -160,6 +165,8 @@
                 logoutBtn.textContent = '로그아웃';
                 logoutBtn.onclick = handleLogout;
                 buttonsEl.appendChild(logoutBtn);
+                // 로그인 성공 → 저장된 상태 불러오기
+                if (typeof window.loadState === 'function') window.loadState();
             } else {
                 statusEl.textContent = '로그인되지 않았습니다.';
                 PROVIDERS.forEach((p) => {
@@ -218,6 +225,58 @@
         let isDrawing = false;
         let editingName = null;
         let editingInput = null;
+
+        // 점수/금액/참가자 저장 (Supabase user_state 테이블 → user_id 기준 1행)
+        // Supabase 클라이언트는 type="module" 스크립트에서 window.__supabase 로 공유됨
+        let saveTimer = null;
+        function scheduleSave() {
+            // 로그아웃/비로그인 상태면 저장 안 함
+            const user = window.__supabaseUser;
+            if (!user) return;
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => saveState(), 300);
+        }
+
+        async function saveState() {
+            const user = window.__supabaseUser;
+            const supabase = window.__supabase;
+            if (!user || !supabase) return;
+            const payload = {
+                user_id: user.id,
+                data: { names, personalScores, currentMoney },
+                updated_at: new Date().toISOString(),
+            };
+            const { error } = await supabase.from("user_state").upsert(payload);
+            if (error) console.error("[저장 실패]", error.message);
+        }
+
+        async function loadState() {
+            const user = window.__supabaseUser;
+            const supabase = window.__supabase;
+            if (!user || !supabase) return;
+            const { data, error } = await supabase
+                .from("user_state")
+                .select("data")
+                .eq("user_id", user.id)
+                .maybeSingle();
+            if (error) {
+                console.error("[불러오기 실패]", error.message);
+                return;
+            }
+            if (!data?.data) return; // 처음 로그인 → 기본값 유지
+            const saved = data.data;
+            if (Array.isArray(saved.names) && saved.names.length >= 2) names = saved.names.slice();
+            if (saved.personalScores && typeof saved.personalScores === "object") {
+                personalScores = {};
+                names.forEach((n) => { personalScores[n] = saved.personalScores[n] || 0; });
+            }
+            if (Number.isSafeInteger(saved.currentMoney)) {
+                currentMoney = saved.currentMoney;
+                document.getElementById("currentMoney").innerHTML = currentMoney.toLocaleString() + "원";
+            }
+            renderPersonalList();
+            generateNameInputs();
+        }
 
         function formatScore(value) {
             return value.toLocaleString() + "원";
@@ -330,6 +389,7 @@
             document.getElementById("win2").disabled = true;
 
             renderPersonalList();
+            scheduleSave();
             alert("참가자가 적용되었습니다! (" + names.length + "명)");
         }
 
@@ -381,6 +441,7 @@
                 scoreElement.style.display = "";
                 renderScore(name);
             }
+            scheduleSave();
         }
 
         function setMoney() {
@@ -392,6 +453,7 @@
             currentMoney = money;
             document.getElementById("currentMoney").innerHTML = currentMoney.toLocaleString() + "원";
             document.getElementById("moneyInput").value = "";
+            scheduleSave();
             alert("금액이 적용되었습니다!");
         }
 
@@ -453,6 +515,7 @@
             winners.forEach(function(name) { personalScores[name] += currentMoney; });
             losers.forEach(function(name) { personalScores[name] -= currentMoney; });
             names.forEach(function(name) { renderScore(name); });
+            scheduleSave();
             alert(team + "팀 승리!\n승리 팀: +" + currentMoney.toLocaleString() + "원\n패배 팀: -" + currentMoney.toLocaleString() + "원");
         }
 
@@ -463,8 +526,13 @@
                     personalScores[name] = 0;
                     renderScore(name);
                 });
+                scheduleSave();
             }
         }
+
+        // 저장/불러오기 함수를 전역으로 노출 (module ↔ 일반 스크립트 공유)
+        window.loadState = loadState;
+        window.saveState = saveState;
 
         // 초기 화면
         names.forEach(function(name) { personalScores[name] = 0; });
