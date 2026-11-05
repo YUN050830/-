@@ -52,6 +52,38 @@
         .auth-btn.logout { background: #6c757d; }
         .auth-hint { font-size: 12px; color: #777; margin-top: 10px; }
         .auth-error { color: #d9534f; font-weight: bold; margin-top: 10px; min-height: 18px; }
+
+        /* 팀 이력 패널 (개인 점수 옆) */
+        .layout-two { display: flex; gap: 25px; max-width: 1120px; margin: 30px auto; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+        .layout-two .personal-container { flex: 1 1 480px; margin: 0; }
+        .history-panel { flex: 1 1 480px; max-width: 620px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; }
+        .history-panel h2 { text-align: center; margin-top: 0; }
+        .history-panel h3 { color: #3157a4; font-size: 16px; margin: 22px 0 8px; }
+        .history-stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .history-stats th, .history-stats td { padding: 7px 6px; border-bottom: 1px solid #eee; text-align: center; }
+        .history-stats th { color: #3157a4; background: #f0f4ff; }
+        .history-stats td:first-child, .history-stats th:first-child { text-align: left; font-weight: bold; }
+        .partner-list { display: flex; flex-direction: column; gap: 6px; }
+        .partner-item { display: flex; justify-content: space-between; align-items: center; background: #f8faff; border: 1px solid #e6ecf9; padding: 8px 10px; border-radius: 8px; font-size: 14px; }
+        .partner-item .count { font-weight: bold; color: #3157a4; background: white; border: 1px solid #d6e0f5; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+        .history-rounds { display: flex; flex-direction: column; gap: 8px; }
+        .history-round { border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+        .history-round .round-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: #666; font-size: 12px; flex-wrap: wrap; }
+        .history-round .winner-badge { font-weight: bold; color: #e05b45; }
+        .history-round .teams { display: flex; flex-direction: column; gap: 3px; }
+        .history-round .team-line { display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
+        .history-round .team-label { font-weight: bold; color: #3157a4; min-width: 38px; }
+        .matrix-wrap { overflow-x: auto; border: 1px solid #eee; border-radius: 10px; }
+        .pair-matrix { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+        .pair-matrix th, .pair-matrix td { border: 1px solid #eee; padding: 6px; text-align: center; min-width: 36px; }
+        .pair-matrix th { background: #f0f4ff; color: #3157a4; }
+        .pair-matrix td.diag { background: #f8f9fa; color: #999; }
+        .pair-matrix td.cell-1 { background: #eef3ff; }
+        .pair-matrix td.cell-2 { background: #dde8ff; }
+        .pair-matrix td.cell-3 { background: #c3d4ff; }
+        .pair-matrix td.cell-4p { background: #9db6ff; font-weight: bold; color: white; }
+        .empty-note { color: #888; font-size: 14px; text-align: center; padding: 12px 0; }
+        .history-clear { display: block; margin: 16px auto 0; }
     </style>
 </head>
 <body>
@@ -107,11 +139,38 @@
         <p>금액을 변경하기 전까지 계속 유지됩니다.</p>
     </div>
 
-    <!-- 개인별 누적 금액 -->
-    <div class="personal-container">
-        <h2>👤 개인별 누적 금액</h2>
-        <p class="hint">금액을 클릭하면 직접 수정할 수 있습니다.</p>
-        <div id="personalList"></div>
+    <!-- 개인별 누적 금액 + 팀 이력 -->
+    <div class="layout-two">
+        <div class="personal-container">
+            <h2>👤 개인별 누적 금액</h2>
+            <p class="hint">금액을 클릭하면 직접 수정할 수 있습니다.</p>
+            <div id="personalList"></div>
+        </div>
+
+        <div class="history-panel">
+            <h2>🤝 팀 조합 이력</h2>
+            <p class="hint" style="text-align:center; margin-top:-6px;">누구와 몇 번 팀을 맺었는지 정리해 드립니다.</p>
+
+            <h3>👥 개인별 팀 횟수</h3>
+            <div id="historyStatsEmpty" class="empty-note">아직 팀을 나눈 기록이 없습니다.</div>
+            <table class="history-stats" id="historyStats" style="display:none;">
+                <thead><tr><th>이름</th><th>참여</th><th>1팀</th><th>2팀</th><th>승</th><th>패</th><th>승률</th></tr></thead>
+                <tbody id="historyStatsBody"></tbody>
+            </table>
+
+            <h3>🫂 파트너별 팀 횟수</h3>
+            <div id="partnerEmpty" class="empty-note">아직 팀을 나눈 기록이 없습니다.</div>
+            <div class="partner-list" id="partnerList"></div>
+
+            <h3>🧩 상대 조합 (같은 팀을 몇 번)</h3>
+            <div id="matrixEmpty" class="empty-note">아직 팀을 나눈 기록이 없습니다.</div>
+            <div class="matrix-wrap" id="matrixWrap" style="display:none;"><table class="pair-matrix" id="pairMatrix"></table></div>
+
+            <h3>🧾 최근 라운드</h3>
+            <div id="roundsEmpty" class="empty-note">아직 팀을 나눈 기록이 없습니다.</div>
+            <div class="history-rounds" id="historyRounds"></div>
+            <button class="reset-button history-clear" onclick="clearHistory()" style="display:none" id="clearHistoryBtn">팀 이력 초기화</button>
+        </div>
     </div>
 
     <button class="reset-button" onclick="resetScore()">전체 점수 초기화</button>
@@ -225,6 +284,7 @@
         let isDrawing = false;
         let editingName = null;
         let editingInput = null;
+        let teamHistory = []; // [{ id, ts, team1:[], team2:[], winner: 1|2|null, money, decidedAt }]
 
         // 점수/금액/참가자 저장 (Supabase user_state 테이블 → user_id 기준 1행)
         // Supabase 클라이언트는 type="module" 스크립트에서 window.__supabase 로 공유됨
@@ -243,7 +303,7 @@
             if (!user || !supabase) return;
             const payload = {
                 user_id: user.id,
-                data: { names, personalScores, currentMoney },
+                data: { names, personalScores, currentMoney, teamHistory },
                 updated_at: new Date().toISOString(),
             };
             const { error } = await supabase.from("user_state").upsert(payload);
@@ -274,8 +334,178 @@
                 currentMoney = saved.currentMoney;
                 document.getElementById("currentMoney").innerHTML = currentMoney.toLocaleString() + "원";
             }
+            if (Array.isArray(saved.teamHistory)) {
+                teamHistory = saved.teamHistory.filter((r) => r && Array.isArray(r.team1) && Array.isArray(r.team2));
+            }
             renderPersonalList();
+            renderTeamHistory();
             generateNameInputs();
+        }
+
+        function formatDateTime(ts) {
+            const d = new Date(ts);
+            if (Number.isNaN(d.getTime())) return "";
+            return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        }
+
+        function computeHistoryStats() {
+            const stats = {};
+            names.forEach(function(name) { stats[name] = { games: 0, team1: 0, team2: 0, wins: 0, losses: 0 }; });
+            teamHistory.forEach(function(rec) {
+                rec.team1.forEach(function(name) { if (stats[name]) {
+                    stats[name].games++; stats[name].team1++;
+                    if (rec.winner === 1) stats[name].wins++; else if (rec.winner === 2) stats[name].losses++;
+                }});
+                rec.team2.forEach(function(name) { if (stats[name]) {
+                    stats[name].games++; stats[name].team2++;
+                    if (rec.winner === 2) stats[name].wins++; else if (rec.winner === 1) stats[name].losses++;
+                }});
+            });
+            return stats;
+        }
+
+        function computePartnerCounts() {
+            const pairMap = {};
+            function addPairs(list) {
+                for (let i = 0; i < list.length; i++) {
+                    for (let j = i + 1; j < list.length; j++) {
+                        const key = [list[i], list[j]].sort().join("||");
+                        pairMap[key] = (pairMap[key] || 0) + 1;
+                    }
+                }
+            }
+            teamHistory.forEach(function(rec) { addPairs(rec.team1 || []); addPairs(rec.team2 || []); });
+            return Object.entries(pairMap)
+                .map(function(entry) { const parts = entry[0].split("||"); return { a: parts[0], b: parts[1], count: entry[1] }; })
+                .sort(function(x, y) { return y.count - x.count || x.a.localeCompare(y.a, "ko") || x.b.localeCompare(y.b, "ko"); });
+        }
+
+        function renderTeamHistory() {
+            const has = teamHistory.length > 0;
+            document.getElementById("historyStats").style.display = has ? "" : "none";
+            document.getElementById("historyStatsEmpty").style.display = has ? "none" : "";
+            document.getElementById("partnerEmpty").style.display = has ? "none" : "";
+            document.getElementById("matrixEmpty").style.display = has ? "none" : "";
+            document.getElementById("matrixWrap").style.display = has ? "" : "none";
+            document.getElementById("roundsEmpty").style.display = has ? "none" : "";
+            document.getElementById("clearHistoryBtn").style.display = has ? "" : "none";
+
+            if (!has) {
+                document.getElementById("historyStatsBody").innerHTML = "";
+                document.getElementById("partnerList").innerHTML = "";
+                document.getElementById("pairMatrix").innerHTML = "";
+                document.getElementById("historyRounds").innerHTML = "";
+                return;
+            }
+
+            const stats = computeHistoryStats();
+            const statsBody = document.getElementById("historyStatsBody");
+            statsBody.innerHTML = "";
+            names.forEach(function(name) {
+                const s = stats[name];
+                const tr = document.createElement("tr");
+                const winRate = (s.wins + s.losses) > 0 ? Math.round((s.wins / (s.wins + s.losses)) * 100) + "%" : "-";
+                tr.innerHTML = "<td></td><td>" + s.games + "</td><td>" + s.team1 + "</td><td>" + s.team2 + "</td><td>" + s.wins + "</td><td>" + s.losses + "</td><td>" + winRate + "</td>";
+                tr.firstChild.textContent = name;
+                statsBody.appendChild(tr);
+            });
+
+            const partners = computePartnerCounts();
+            const partnerList = document.getElementById("partnerList");
+            partnerList.innerHTML = "";
+            if (partners.length === 0) {
+                partnerList.innerHTML = '<div class="empty-note">같은 팀으로 만난 조합이 없습니다.</div>';
+            } else {
+                partners.slice(0, 20).forEach(function(p) {
+                    const item = document.createElement("div");
+                    item.className = "partner-item";
+                    item.innerHTML = '<span></span><span class="count"></span>';
+                    item.firstChild.textContent = p.a + " · " + p.b;
+                    item.lastChild.textContent = p.count + "번";
+                    partnerList.appendChild(item);
+                });
+                if (partners.length > 20) {
+                    const more = document.createElement("div");
+                    more.className = "empty-note";
+                    more.textContent = "외 " + (partners.length - 20) + "개 조합";
+                    partnerList.appendChild(more);
+                }
+            }
+
+            const matrix = document.getElementById("pairMatrix");
+            matrix.innerHTML = "";
+            const partnerLookup = {};
+            partners.forEach(function(p) { partnerLookup[p.a + "||" + p.b] = p.count; });
+            let thead = "<thead><tr><th></th>";
+            names.forEach(function(n) { thead += "<th></th>"; });
+            thead += "</tr></thead>";
+            matrix.innerHTML = thead;
+            const theadRow = matrix.querySelector("thead tr");
+            names.forEach(function(n, idx) { theadRow.children[idx + 1].textContent = n; });
+            const tbody = document.createElement("tbody");
+            names.forEach(function(rowName) {
+                const tr = document.createElement("tr");
+                const th = document.createElement("th");
+                th.textContent = rowName;
+                tr.appendChild(th);
+                names.forEach(function(colName) {
+                    const td = document.createElement("td");
+                    if (rowName === colName) { td.textContent = "—"; td.className = "diag"; }
+                    else {
+                        const key = [rowName, colName].sort().join("||");
+                        const c = partnerLookup[key] || 0;
+                        td.textContent = c;
+                        td.className = c >= 4 ? "cell-4p" : ("cell-" + c);
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            matrix.appendChild(tbody);
+
+            const roundsEl = document.getElementById("historyRounds");
+            roundsEl.innerHTML = "";
+            teamHistory.slice(-6).slice().reverse().forEach(function(rec, revIdx) {
+                const roundNo = teamHistory.length - revIdx;
+                const card = document.createElement("div");
+                card.className = "history-round";
+                const head = document.createElement("div");
+                head.className = "round-head";
+                head.innerHTML = "<span><strong></strong></span><span></span>";
+                head.firstChild.firstChild.textContent = roundNo + "번째 팀";
+                head.lastChild.textContent = (rec.money ? ("금액 " + rec.money.toLocaleString() + "원 · ") : "") + formatDateTime(rec.ts || rec.id);
+                card.appendChild(head);
+                const teams = document.createElement("div");
+                teams.className = "teams";
+                [["1팀", rec.team1, rec.winner === 1], ["2팀", rec.team2, rec.winner === 2]].forEach(function(cfg) {
+                    const line = document.createElement("div");
+                    line.className = "team-line";
+                    const label = document.createElement("span");
+                    label.className = "team-label";
+                    label.textContent = cfg[0];
+                    const members = document.createElement("span");
+                    members.textContent = (cfg[1] || []).join(", ");
+                    line.appendChild(label);
+                    line.appendChild(members);
+                    if (cfg[2]) {
+                        const badge = document.createElement("span");
+                        badge.className = "winner-badge";
+                        badge.textContent = "승리";
+                        line.appendChild(badge);
+                    }
+                    teams.appendChild(line);
+                });
+                card.appendChild(teams);
+                roundsEl.appendChild(card);
+            });
+        }
+
+        function clearHistory() {
+            if (!teamHistory.length) return;
+            if (!confirm("팀 조합 이력을 모두 초기화할까요?")) return;
+            teamHistory = [];
+            renderTeamHistory();
+            scheduleSave();
         }
 
         function formatScore(value) {
@@ -389,6 +619,7 @@
             document.getElementById("win2").disabled = true;
 
             renderPersonalList();
+            renderTeamHistory();
             scheduleSave();
             alert("참가자가 적용되었습니다! (" + names.length + "명)");
         }
@@ -490,6 +721,18 @@
                 document.getElementById("win2").disabled = false;
                 button.disabled = false;
                 button.innerHTML = "다시 팀 나누기!";
+
+                teamHistory.push({
+                    id: Date.now(),
+                    ts: Date.now(),
+                    team1: [...team1],
+                    team2: [...team2],
+                    winner: null,
+                    money: currentMoney || 0,
+                });
+                if (teamHistory.length > 200) teamHistory = teamHistory.slice(-200);
+                renderTeamHistory();
+                scheduleSave();
             }, 2000);
         }
 
@@ -515,6 +758,13 @@
             winners.forEach(function(name) { personalScores[name] += currentMoney; });
             losers.forEach(function(name) { personalScores[name] -= currentMoney; });
             names.forEach(function(name) { renderScore(name); });
+            const latest = teamHistory[teamHistory.length - 1];
+            if (latest && !latest.winner) {
+                latest.winner = team;
+                latest.decidedAt = Date.now();
+                latest.money = currentMoney;
+            }
+            renderTeamHistory();
             scheduleSave();
             alert(team + "팀 승리!\n승리 팀: +" + currentMoney.toLocaleString() + "원\n패배 팀: -" + currentMoney.toLocaleString() + "원");
         }
@@ -537,6 +787,7 @@
         // 초기 화면
         names.forEach(function(name) { personalScores[name] = 0; });
         renderPersonalList();
+        renderTeamHistory();
         generateNameInputs();
     </script>
 </body>
